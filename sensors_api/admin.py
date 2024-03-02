@@ -1,3 +1,10 @@
+# admin.py
 from django.contrib import admin
+from .models import ESP32Device
 
-# Register your models here.
+
+class ESP32DeviceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'token','user')  # Customize the display fields in the list view
+
+
+admin.site.register(ESP32Device, ESP32DeviceAdmin)

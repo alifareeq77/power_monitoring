@@ -47,6 +47,10 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         # You can include other authentication classes as needed
     ),
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        # Add other renderers as needed
+    ],
 }
 AUTH_USER_MODEL = 'users.CustomUser'
 MIDDLEWARE = [

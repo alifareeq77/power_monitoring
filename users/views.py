@@ -1,13 +1,18 @@
 # users/views.py
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
+
+from sensors_api.models import UserDashboard
 from .forms import UserRegisterForm, UserLoginForm
 from django.contrib.auth.decorators import login_required
 
 
 @login_required(login_url='/login/')
 def home(request):
-    return render(request, 'index.html')
+    dashboard_link = UserDashboard.objects.get(user=request.user).dashboard_link
+    return render(request, 'index.html', {
+        "dashboard_link": dashboard_link,
+    })
 
 
 def register(request):

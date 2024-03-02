@@ -1,9 +1,113 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block title %}Power Monitoring System{% endblock %}
+{% block header %}Hello there!{% endblock %}
+{% block extra_head %}
+    <style>
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .context-container {
+            max-width: calc(50% - 10px); /* 50% width for large screens */
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: justify;
+            line-height: 1.6;
+        }
+        .context-container h2 {
+            color: #007bff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .context-container p {
+            margin-bottom: 15px;
+        }
+        .context-container ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        .context-container li {
+            margin-bottom: 5px;
+        }
+        /* Additional styles for QR code container */
+        #qrcode-container {
+            margin-bottom: 20px;
+        }
 
-{% block title %}Home{% endblock %}
-
-{% block header %}Welcome to Your Website{% endblock %}
-
+        /* Adjust layout for medium-sized screens and above */
+        @media (max-width: 991.98px) {
+            .container {
+                flex-direction: column;
+            }
+            .context-container {
+                max-width: 100%; /* Full width for medium screens and below */
+            }sensors_api_userdashboard
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
+{% endblock extra_head %}
 {% block content %}
-    <p>This is the home page content.</p>
+    <div class="container mt-5">
+        <div class="context-container">
+            <h2>Understanding the Power Monitoring System</h2>
+            <p>In today's energy-conscious world, efficient power consumption is paramount for both individuals and organizations. Power monitoring systems play a crucial role in enabling users to track, analyze, and optimize their energy usage.</p>
+            <h3>Purpose</h3>
+            <p>The primary purpose of a power monitoring system is to provide users with insights into their electricity usage patterns. By monitoring voltage and current levels, users can understand how much power their devices are consuming at any given time.</p>
+            <h3>Components</h3>
+            <ul>
+                <li><strong>Sensors:</strong> Devices to measure voltage and current levels.</li>
+                <li><strong>Data Acquisition System:</strong> Collects data from sensors and transmits it to a processing unit.</li>
+                <li><strong>User Interface:</strong> Provides visualizations and reports for data interpretation.</li>
+            </ul>
+            <h3>Uses</h3>
+            <p>Power monitoring systems have various uses including:</p>
+            <ul>
+                <li>Improving energy efficiency.</li>
+                <li>Identifying equipment maintenance needs.</li>
+                <li>Facilitating billing and compliance.</li>
+                <li>Managing demand and optimizing grid interaction.</li>
+                <li>Integrating renewable energy sources.</li>
+            </ul>
+            <p>Overall, power monitoring systems play a vital role in managing electricity consumption effectively, leading to efficiency, cost savings, and environmental sustainability.</p>
+        </div>
+        <div id="qrcode-container" class="context-container">
+            <!-- QR Code will be generated here -->
+        </div>
+    </div>
+    <script>
+        // Generate QR code with the specified URL
+        function generateQRCode(url) {
+            var qr = new QRious({
+                value: url,
+                size: 200 // Adjust the size as needed
+            });
+
+            // Get the data URL of the QR code image
+            var dataURL = qr.toDataURL();
+
+            // Create an image element
+            var qrImage = new Image();
+            qrImage.src = dataURL;
+
+            // Append the image to the QR code container
+            document.getElementById('qrcode-container').appendChild(qrImage);
+        }
+
+        // Get dashboard link from the <a> tag
+        var dashboardLink = document.querySelector('.navbar-nav .nav-link[href*="dashboard"]');
+        
+        // Check if dashboardLink exists
+        if (dashboardLink) {
+            // Generate QR code URL
+            var qrCodeURL = window.location.origin + dashboardLink.getAttribute('href');
+
+            // Call generateQRCode function with the generated URL
+            generateQRCode(qrCodeURL);
+        }
+    </script>
 {% endblock %}

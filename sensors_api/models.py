@@ -1,12 +1,10 @@
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 import uuid
 from django.contrib.auth import get_user_model
-
-# Create your models here.
+from django.utils import timezone
 User = get_user_model()
-
 
 
 class SensorData(models.Model):
@@ -35,3 +33,23 @@ def create_user_dashboard(sender, instance, created, **kwargs):
         UserDashboard.objects.create(user=instance, dashboard_link=dashboard_link)
 
 
+class ESP32Device(models.Model):
+    name = models.CharField(max_length=100)
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    last_seen = models.DateTimeField(default=timezone.now)
+
+    def update_last_seen(self):
+        self.last_seen = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return self.name
+
+
+# Automatically generate token for new ESP32Device instances
+@receiver(post_save, sender=ESP32Device)
+def generate_token(sender, instance, created, **kwargs):
+    if created:
+        instance.token = uuid.uuid4()
+        instance.save()

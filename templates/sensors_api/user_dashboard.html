@@ -1,10 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Interactive Voltage & Current Monitor{% endblock %}
+{% block header %}Interactive Voltage & Current Monitor{% endblock %}
 
-</body>
-</html>
+{% block extra_head %}
+    <style>
+        .sensor-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 50px;
+        }
+        .sensor-card {
+            width: calc(50% - 20px); /* 50% width for medium screens and below */
+            margin: 10px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .sensor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 12px 20px rgba(0, 0, 0, 0.2);
+        }
+        .sensor-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .sensor-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #007bff;
+            max-width: 100%; /* Ensure the value does not exceed the box width */
+            overflow: hidden; /* Hide any overflow */
+            text-overflow: ellipsis; /* Display ellipsis for overflow */
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        .sensor-unit {
+            font-size: 18px;
+            color: #6c757d;
+        }
+
+        /* Adjust layout for small screens */
+        @media (max-width: 767.98px) {
+            .sensor-card {
+                width: calc(100% - 20px); /* Full width for small screens */
+            }
+        }
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+    <div class="container">
+        <div class="sensor-container">
+            <div class="sensor-card voltage-card">
+                <h3 class="sensor-title">Voltage</h3>
+                <p class="sensor-value" id="voltage">0.00</p>
+                <p class="sensor-unit">Volts</p>
+            </div>
+            <div class="sensor-card current-card">
+                <h3 class="sensor-title">Current</h3>
+                <p class="sensor-value" id="current">0.00</p>
+                <p class="sensor-unit">Amps</p>
+            </div>
+            <div class="sensor-card power-card">
+                <h3 class="sensor-title">Power</h3>
+                <p class="sensor-value" id="power">0.00</p>
+                <p class="sensor-unit">Watts</p>
+            </div>
+        </div>
+    </div>
+    <div class="online-indicator" id="power-indicator"></div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            function updateSensorData() {
+                $.ajax({
+                    url: '/api/sensor-data/',
+                    type: 'GET',
+                    success: function(response) {
+                        // Update sensor values
+                        $('.voltage-card .sensor-value').text(parseFloat(response.voltage).toFixed(3));
+                        $('.current-card .sensor-value').text(parseFloat(response.current).toFixed(3));
+                        $('.power-card .sensor-value').text(parseFloat(response.power).toFixed(3));
+
+                        // Update online indicators
+                        updateOnlineIndicator('#voltage-indicator', response.voltage);
+                        updateOnlineIndicator('#current-indicator', response.current);
+                        updateOnlineIndicator('#power-indicator', response.power);
+                    },
+                    error: function(xhr, errmsg, err) {
+                        console.log(xhr.status + ": " + xhr.responseText);
+                        // Update all indicators to show offline status
+                        $('.online-indicator').removeClass('online').addClass('offline');
+                    }
+                });
+            }
+
+            function updateOnlineIndicator(selector, value) {
+                // Change class based on availability of data
+                if (value !== null && value !== undefined) {
+                    $(selector).removeClass('offline').addClass('online');
+                } else {
+                    $(selector).removeClass('online').addClass('offline');
+                }
+            }
+
+            // Call the updateSensorData function initially
+            updateSensorData();
+
+            // Set interval to update sensor data every 5 seconds
+            setInterval(updateSensorData, 5000);
+        });
+    </script>
+{% endblock %}
