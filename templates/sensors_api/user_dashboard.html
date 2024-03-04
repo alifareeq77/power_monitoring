@@ -79,46 +79,35 @@
         </div>
     </div>
     <div class="online-indicator" id="power-indicator"></div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
-        $(document).ready(function() {
-            function updateSensorData() {
-                $.ajax({
-                    url: '/api/sensor-data/',
-                    type: 'GET',
-                    success: function(response) {
-                        // Update sensor values
-                        $('.voltage-card .sensor-value').text(parseFloat(response.voltage).toFixed(3));
-                        $('.current-card .sensor-value').text(parseFloat(response.current).toFixed(3));
-                        $('.power-card .sensor-value').text(parseFloat(response.power).toFixed(3));
+    document.addEventListener("DOMContentLoaded", function() {
+    function updateSensorData() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/api/sensor-data/", true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    // Update sensor values
+                    document.querySelector('.voltage-card .sensor-value').textContent = parseFloat(response.voltage).toFixed(3);
+                    document.querySelector('.current-card .sensor-value').textContent = parseFloat(response.current).toFixed(3);
+                    document.querySelector('.power-card .sensor-value').textContent = parseFloat(response.power).toFixed(3);
 
-                        // Update online indicators
-                        updateOnlineIndicator('#voltage-indicator', response.voltage);
-                        updateOnlineIndicator('#current-indicator', response.current);
-                        updateOnlineIndicator('#power-indicator', response.power);
-                    },
-                    error: function(xhr, errmsg, err) {
-                        console.log(xhr.status + ": " + xhr.responseText);
-                        // Update all indicators to show offline status
-                        $('.online-indicator').removeClass('online').addClass('offline');
-                    }
-                });
-            }
-
-            function updateOnlineIndicator(selector, value) {
-                // Change class based on availability of data
-                if (value !== null && value !== undefined) {
-                    $(selector).removeClass('offline').addClass('online');
-                } else {
-                    $(selector).removeClass('online').addClass('offline');
+                    // Update online indicators
+                  
                 }
             }
+        };
+        xhr.send();
+    }
 
-            // Call the updateSensorData function initially
-            updateSensorData();
+    
 
-            // Set interval to update sensor data every 5 seconds
-            setInterval(updateSensorData, 5000);
-        });
-    </script>
+    // Call the updateSensorData function initially
+    updateSensorData();
+
+    // Set interval to update sensor data every 5 seconds
+    setInterval(updateSensorData, 5000);
+});
+</script>
 {% endblock %}
