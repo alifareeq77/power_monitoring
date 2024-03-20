@@ -23,7 +23,7 @@ STATIC_ROOT = BASE_DIR / 'static/'
 SECRET_KEY = 'django-insecure-5==s$a-dx*+varz+%4+&ky6v#!89-1+j_9p)8z1p0_-*ely8tc'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 STATIC_URL = '/static/'
 ALLOWED_HOSTS = ["*"]
 
