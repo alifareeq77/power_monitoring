@@ -4,6 +4,7 @@ from django.dispatch import receiver
 import uuid
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+
 User = get_user_model()
 
 
@@ -11,7 +12,7 @@ class SensorData(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     voltage = models.FloatField()
     current = models.FloatField()
-    power = models.FloatField(blank=True, null=True)  # Added field for power
+    power = models.FloatField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -37,11 +38,8 @@ class ESP32Device(models.Model):
     name = models.CharField(max_length=100)
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    last_seen = models.DateTimeField(default=timezone.now)
-
-    def update_last_seen(self):
-        self.last_seen = timezone.now()
-        self.save()
+    is_switched = models.BooleanField(default=False)
+    switching_token = models.UUIDField(default=uuid.uuid4, editable=False)
 
     def __str__(self):
         return self.name
@@ -52,4 +50,5 @@ class ESP32Device(models.Model):
 def generate_token(sender, instance, created, **kwargs):
     if created:
         instance.token = uuid.uuid4()
+        instance.switching_token = uuid.uuid4()
         instance.save()

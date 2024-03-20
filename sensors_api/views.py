@@ -1,21 +1,21 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from .models import UserDashboard, SensorData, ESP32Device
 from .serializers import SensorDataSerializer
-from rest_framework import viewsets
-from rest_framework import status
-from datetime import timedelta
-from django.utils import timezone
 
 
 def user_dashboard(request, dashboard_link):
     try:
         user_dashboard = UserDashboard.objects.get(dashboard_link=dashboard_link)
-        context = {'dashboard_link': dashboard_link}
+        esp32_device = ESP32Device.objects.filter(user=request.user, name="home")
+        context = {'dashboard_link': dashboard_link, "esp32_device": esp32_device}
         return render(request, 'sensors_api/user_dashboard.html', context)
     except UserDashboard.DoesNotExist:
         messages.error(request, 'You do not have access to this dashboard.')
@@ -38,6 +38,22 @@ def get_sensor_data(request):
         return Response({'error': 'Sensor data not found'}, status=404)
 
 
+@api_view(['PUT'])
+@login_required
+def update_switch_status(request, switching_token):
+    user = request.user.id
+    esp32_device = get_object_or_404(ESP32Device, user_id=user, switching_token=switching_token)
+    is_switched = request.data.get('is_switched')
+    if not str(is_switched):
+        return Response({'error': 'switching value is required !'}, status=status.HTTP_400_BAD_REQUEST)
+    if not isinstance(is_switched, bool):
+        return Response({'error': 'switching value must be boolean !'}, status=status.HTTP_400_BAD_REQUEST)
+    print(is_switched)
+    esp32_device.is_switched = bool(is_switched)
+    esp32_device.save()
+    return Response({"is_switched": is_switched}, status=status.HTTP_204_NO_CONTENT)
+
+
 class ReceiveSensorData(APIView):
 
     def post(self, request, token):
@@ -51,32 +67,7 @@ class ReceiveSensorData(APIView):
         serializer = SensorDataSerializer(sensor_data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-class ReceiveHeartbeat(APIView):
-    def post(self, request, token):
-        # Retrieve the ESP32 device object based on the token
+    def get(self, request, token):
         esp32_device = get_object_or_404(ESP32Device, token=token)
-
-        # Perform any necessary actions upon receiving a heartbeat
-        # For example, you can update a last_seen field on the device object
-        esp32_device.update_last_seen()
-
-        return Response(status=status.HTTP_200_OK)
-
-
-class ESP32DeviceViewSet(viewsets.ViewSet):
-    def check_online_status(self, request, token):
-        try:
-            # Find the ESP32 device with the provided token
-            device = ESP32Device.objects.get(token=token)
-
-            # Calculate the time difference between now and the last seen timestamp
-            time_difference = timedelta(seconds=300)  # 5 minutes
-            is_online = device.last_seen >= (timezone.now() - time_difference)
-
-            # Return the online status
-            return Response({'online': is_online}, status=status.HTTP_200_OK)
-
-        except ESP32Device.DoesNotExist:
-            # Handle the case where the token is not valid
-            return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
+        is_switched = esp32_device.is_switched
+        return Response({'is_switched': is_switched}, status=status.HTTP_200_OK)

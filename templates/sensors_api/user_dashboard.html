@@ -5,12 +5,29 @@
 
 {% block extra_head %}
     <style>
+        /* Button styles */
+        #switch-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #switch-button:hover {
+            background-color: #0056b3;
+        }
+
         .sensor-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-around;
             margin-top: 50px;
         }
+
         .sensor-card {
             width: calc(50% - 20px); /* 50% width for medium screens and below */
             margin: 10px;
@@ -25,16 +42,19 @@
             align-items: center;
             text-align: center;
         }
+
         .sensor-card:hover {
             transform: translateY(-5px);
             box-shadow: 0px 12px 20px rgba(0, 0, 0, 0.2);
         }
+
         .sensor-title {
             font-size: 24px;
             font-weight: bold;
             color: #007bff;
             margin-bottom: 10px;
         }
+
         .sensor-value {
             font-size: 36px;
             font-weight: bold;
@@ -44,6 +64,7 @@
             text-overflow: ellipsis; /* Display ellipsis for overflow */
             white-space: nowrap; /* Prevent wrapping */
         }
+
         .sensor-unit {
             font-size: 18px;
             color: #6c757d;
@@ -76,38 +97,101 @@
                 <p class="sensor-value" id="power">0.00</p>
                 <p class="sensor-unit">Watts</p>
             </div>
+            {% for esp in esp32_device %}
+                <div class="sensor-card switch-card ">
+                    <h3 class="sensor-title">{{ esp.name }} switch</h3>
+                    <button id="switch-button" class="s-{{ esp.switching_token }}"
+                            onclick="toggle_switch('{{ esp.switching_token }}')"
+                            value="{{ esp.is_switched }}">{% if esp.is_switched %}Turn off{% else %}Turn
+                        on{% endif %}</button>
+                </div>
+            {% endfor %}
         </div>
     </div>
-    <div class="online-indicator" id="power-indicator"></div>
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-    function updateSensorData() {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "/api/sensor-data/", true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200) {
-                    var response = JSON.parse(xhr.responseText);
-                    // Update sensor values
-                    document.querySelector('.voltage-card .sensor-value').textContent = parseFloat(response.voltage).toFixed(3);
-                    document.querySelector('.current-card .sensor-value').textContent = parseFloat(response.current).toFixed(3);
-                    document.querySelector('.power-card .sensor-value').textContent = parseFloat(response.power).toFixed(3);
 
-                    // Update online indicators
-                  
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            function updateSensorData() {
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", "/api/sensor-data/", true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            var response = JSON.parse(xhr.responseText);
+                            // Update sensor values
+                            document.querySelector('.voltage-card .sensor-value').textContent = parseFloat(response.voltage).toFixed(3);
+                            document.querySelector('.current-card .sensor-value').textContent = parseFloat(response.current).toFixed(3);
+                            document.querySelector('.power-card .sensor-value').textContent = parseFloat(response.power).toFixed(3);
+
+                        }
+                    }
+                };
+                xhr.send();
+            }
+
+
+            // Call the updateSensorData function initially
+            updateSensorData();
+
+            // Set interval to update sensor data every 5 seconds
+            setInterval(updateSensorData, 5000);
+        });
+
+        function toggle_switch(switching_token) {
+            let s = document.querySelector(`.s-${switching_token}`);
+            is_switched = get_bool(s.value)
+            s.disabled = true;
+
+            // Display loading spinner
+            s.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+
+            // Get CSRF token from the cookie
+            const csrfToken = getCookie('csrftoken');
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("PUT", `/api/update/${switching_token}/`, true);
+            xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+            xhr.setRequestHeader("X-CSRFToken", csrfToken); // Include CSRF token in the request header
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 204) {
+                        is_switched = !is_switched
+                        // Update button text based on response
+                        s.innerText = is_switched ? "Turn off" : "Turn on";
+                        s.value = is_switched ? "True":"False"
+                        s.disabled = false;
+                    } else {
+                        console.error('Error:', xhr.statusText);
+                        // Restore button text and enable the button
+                        s.innerText = is_switched ? "Turn off" : "Turn on";
+                        s.disabled = false;
+                    }
+                }
+            };
+            
+            xhr.send(JSON.stringify({"is_switched": !is_switched}));
+        }
+
+        function get_bool(s) {
+            return s.toString().toLowerCase() === 'false' ? false : true
+        }
+
+        // Function to get CSRF token from the cookie
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    // Check if the cookie name matches the specified name
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
-        };
-        xhr.send();
-    }
+            return cookieValue;
+        }
 
-    
-
-    // Call the updateSensorData function initially
-    updateSensorData();
-
-    // Set interval to update sensor data every 5 seconds
-    setInterval(updateSensorData, 5000);
-});
-</script>
+    </script>
 {% endblock %}
