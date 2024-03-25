@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -14,8 +13,10 @@ from .serializers import SensorDataSerializer
 def user_dashboard(request, dashboard_link):
     try:
         user_dashboard = UserDashboard.objects.get(dashboard_link=dashboard_link)
-        esp32_device = ESP32Device.objects.filter(user=request.user, name="home")
-        context = {'dashboard_link': dashboard_link, "esp32_device": esp32_device}
+        context = {'dashboard_link': dashboard_link}
+        if request.user.is_authenticated:
+            esp32_device = ESP32Device.objects.filter(user=request.user, name="home")
+            context = {'dashboard_link': dashboard_link, "esp32_device": esp32_device}
         return render(request, 'sensors_api/user_dashboard.html', context)
     except UserDashboard.DoesNotExist:
         messages.error(request, 'You do not have access to this dashboard.')

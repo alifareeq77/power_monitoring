@@ -97,6 +97,7 @@
                 <p class="sensor-value" id="power">0.00</p>
                 <p class="sensor-unit">Watts</p>
             </div>
+            {% if user.is_authenticated %}
             {% for esp in esp32_device %}
                 <div class="sensor-card switch-card ">
                     <h3 class="sensor-title">{{ esp.name }} switch</h3>
@@ -106,6 +107,7 @@
                         on{% endif %}</button>
                 </div>
             {% endfor %}
+            {% endif %}
         </div>
     </div>
 
